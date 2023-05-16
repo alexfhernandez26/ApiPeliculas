@@ -16,6 +16,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(optiones =>
 //Agregamos los repositorios.
 builder.Services.AddScoped<ICategoriaRepositorio, CategoriaRepositorio>();
 builder.Services.AddScoped<IPeliculaRepositorio, PeliculaRepositorio>();
+builder.Services.AddScoped<IUsuarioRepositorio, UsuarioRepositorio>();
 
 //Agregando Automapper
 builder.Services.AddAutoMapper(typeof(PeliculasMapper).Assembly);
@@ -25,6 +26,12 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+//Soporte para CORS
+builder.Services.AddCors( P => P.AddPolicy("PolicyCors", build =>
+{
+    build.WithOrigins("*").AllowAnyHeader().AllowAnyMethod();
+}));
 
 var app = builder.Build();
 
@@ -38,6 +45,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors("PolicyCors");
 app.UseAuthorization();
 
 app.MapControllers();
