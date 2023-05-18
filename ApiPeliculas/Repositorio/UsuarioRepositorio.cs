@@ -2,6 +2,8 @@
 using ApiPeliculas.Modelos;
 using ApiPeliculas.Modelos.Dtos;
 using ApiPeliculas.Repositorio.IRepositorio;
+using AutoMapper;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -12,26 +14,47 @@ namespace ApiPeliculas.Repositorio
 {
     public class UsuarioRepositorio : IUsuarioRepositorio
     {
+        /*UserManager<TUser> y RoleManager<TRole> son clases proporcionadas por el framework para administrar usuarios y roles respectivamente. 
+          se utilizan para realizar operaciones relacionadas con la autenticación, autorización y administración de usuarios y roles en una aplicación
+        El UserManager<TUser> se utiliza para administrar usuarios, como crear nuevos usuarios, buscar usuarios, modificar información de usuarios, administrar contraseñas
+        realizar operaciones de inicio de sesión y cierre de sesión, entre otras funcionalidades relacionadas con la autenticación y autorización de usuarios.
+        
+         El RoleManager<TRole> se utiliza para administrar roles, como crear nuevos roles, buscar roles, agregar o eliminar usuarios de un rol, realizar comprobaciones 
+        de pertenencia a un rol,
+        
+         Ambas clases se utilizan en conjunto con el fin de administrar de manera eficiente y segura la autenticación y autorización de usuarios en una aplicación .NET
+        utilizando .NET Identity. Al utilizar estas clases, puedes evitar tener que implementar manualmente la lógica para administrar usuarios y roles, ya que .NET Identity 
+        proporciona una capa de abstracción que facilita estas tareas comunes.*/
+
         private readonly ApplicationDbContext _db;
         private string claveSecreta;
-        public UsuarioRepositorio(ApplicationDbContext db, IConfiguration config)
+        private readonly UserManager<AppUsuario> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IMapper _mapper;
+        public UsuarioRepositorio(ApplicationDbContext db, IConfiguration config,
+                           UserManager<AppUsuario> userManager, RoleManager<IdentityRole> roleManager,
+                           IMapper mapper)
         {
             _db = db;
             claveSecreta = config.GetValue<string>("ApiSettings:Secreta");
+            _roleManager = roleManager;
+            _userManager = userManager;
+            _roleManager = roleManager;
+            _mapper= mapper;
         }
-        public Usuario GetUsuario(int usuarioId)
+        public AppUsuario GetUsuario(string usuarioId)
         {
-            return _db.Usuario.FirstOrDefault(u => u.Id == usuarioId);
+            return _db.sppUsuario.FirstOrDefault(u => u.Id == usuarioId);
         }
 
-        public ICollection<Usuario> GetUsuarios()
+        public ICollection<AppUsuario> GetUsuarios()
         {
-           return _db.Usuario.OrderBy(u => u.Nombre).ToList();
+           return _db.sppUsuario.OrderBy(u => u.UserName).ToList();
         }
 
         public bool IsUniqueUser(string nombreUsuario)
         {
-            var usuariodb = _db.Usuario.FirstOrDefault(u => u.NombreUsuario == nombreUsuario);
+            var usuariodb = _db.sppUsuario.FirstOrDefault(u => u.UserName == nombreUsuario);
             if (usuariodb ==null)
             {
                 return true;
@@ -40,37 +63,64 @@ namespace ApiPeliculas.Repositorio
             return false;
         }
 
-        public async Task<Usuario> Registro(UsuarioRegistroDto usuarioRegistroDto)
+        public async Task<UsuarioDatosDto> Registro(UsuarioRegistroDto usuarioRegistroDto)
         {
-            var paswordEncriptado = obtenermd5(usuarioRegistroDto.Password);
+            
 
-            Usuario usuario = new Usuario()
+            AppUsuario usuario = new AppUsuario()
             {
-                Nombre = usuarioRegistroDto.Nombre,
-                NombreUsuario = usuarioRegistroDto.NombreUsuario,
-                Password = paswordEncriptado,
-                Rol = usuarioRegistroDto.Rol
+                UserName = usuarioRegistroDto.NombreUsuario,
+                Email = usuarioRegistroDto.NombreUsuario,
+                NormalizedEmail = usuarioRegistroDto.NombreUsuario.ToUpper(),
+                Nombre = usuarioRegistroDto.Nombre
             };
+            try
+            {
+                var result2 = await _userManager.CreateAsync(usuario, usuarioRegistroDto.Password);
+                // Resto del código en caso de éxito
+            }
+            catch (Exception ex)
+            {
+                // Manejo de la excepción
+                Console.WriteLine($"Se produjo una excepción: {ex.Message}");
+                // Puedes agregar más lógica de manejo de excepciones aquí si es necesario
+            }
 
-            _db.Usuario.Add(usuario);
-            await _db.SaveChangesAsync();
+            var result =await _userManager.CreateAsync(usuario, usuarioRegistroDto.Password);
 
-            usuario.Password = paswordEncriptado;
-            return usuario;
+
+            if (result.Succeeded)
+            {
+                //Solo la primera vez y para crear los roles
+                if (!_roleManager.RoleExistsAsync("Admin").GetAwaiter().GetResult())
+                {
+                    await _roleManager.CreateAsync(new IdentityRole("Admin"));
+                    await _roleManager.CreateAsync(new IdentityRole("Registrado"));
+                }
+
+                await _userManager.AddToRoleAsync(usuario, "Admin");
+                var usuarioRetornado = _db.sppUsuario.FirstOrDefault(u => u.UserName == usuarioRegistroDto.NombreUsuario);
+
+              
+                return _mapper.Map<UsuarioDatosDto>(usuarioRetornado);
+            }
+
+
+            return new UsuarioDatosDto();
+         
         }
 
         public async Task<UsuarioLoginRespuestaDto> Login(UsuarioLoginDto usuarioLoginDto)
         {
-            var passwordEncriptada = obtenermd5(usuarioLoginDto.Password);
+            //var passwordEncriptada = obtenermd5(usuarioLoginDto.Password);
 
-            var usuario = _db.Usuario.FirstOrDefault
-                            (
-                                u=> u.NombreUsuario.ToLower() == usuarioLoginDto.NombreUsuario.ToLower()
-                                && u.Password == passwordEncriptada
-                            );
+            var usuario = _db.sppUsuario.FirstOrDefault
+                            (u=> u.UserName.ToLower() == usuarioLoginDto.NombreUsuario.ToLower());
 
+
+            bool isValida = await _userManager.CheckPasswordAsync(usuario, usuarioLoginDto.Password);
             //validamos si no existe usuario.
-            if (usuario ==null)
+            if (usuario ==null || isValida ==false)
             {
                 return new UsuarioLoginRespuestaDto()
                 {
@@ -80,7 +130,9 @@ namespace ApiPeliculas.Repositorio
             }
 
             //si existe el usuario podemos procesar el login
-            //creacion del token,JwtSecurityTokenHandler(); esta libreria es para poder manejar el token
+            var roles = await _userManager.GetRolesAsync(usuario);
+
+
             var manejarToken =new  JwtSecurityTokenHandler();
 
             //creamos una variable que sera la llave secreta que valida los token
@@ -90,8 +142,8 @@ namespace ApiPeliculas.Repositorio
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
-                    new Claim(ClaimTypes.Name, usuario.NombreUsuario.ToString()),
-                    new Claim(ClaimTypes.Role, usuario.Rol)
+                    new Claim(ClaimTypes.Name, usuario.UserName.ToString()),
+                    new Claim(ClaimTypes.Role, roles.FirstOrDefault())
                 }),
                  Expires = DateTime.UtcNow.AddDays(7),
 
@@ -107,7 +159,7 @@ namespace ApiPeliculas.Repositorio
             UsuarioLoginRespuestaDto usuarioLoginRespuestaDto = new UsuarioLoginRespuestaDto()
             {
                 Token = manejarToken.WriteToken(token),
-                Usuario = usuario
+                Usuario = _mapper.Map<UsuarioDatosDto>(usuario)
             };
 
             return usuarioLoginRespuestaDto;
@@ -115,23 +167,23 @@ namespace ApiPeliculas.Repositorio
 
 
 
-        public static string obtenermd5(string valor)
-        {
+        //public static string obtenermd5(string valor)
+        //{
          
-              byte[] bytes = Encoding.UTF8.GetBytes(valor);
-            using (MD5 md5 = MD5.Create())
-            {
+        //      byte[] bytes = Encoding.UTF8.GetBytes(valor);
+        //    using (MD5 md5 = MD5.Create())
+        //    {
 
-                byte[] hash = md5.ComputeHash(bytes);
+        //        byte[] hash = md5.ComputeHash(bytes);
 
                 
-                StringBuilder sb = new StringBuilder();
-                for (int i = 0; i < hash.Length; i++)
-                {
-                    sb.Append(hash[i].ToString("x2"));
-                }
-                return sb.ToString();
-            }
-        }
+        //        StringBuilder sb = new StringBuilder();
+        //        for (int i = 0; i < hash.Length; i++)
+        //        {
+        //            sb.Append(hash[i].ToString("x2"));
+        //        }
+        //        return sb.ToString();
+        //    }
+        //}
     }
 }

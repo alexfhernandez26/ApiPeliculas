@@ -2,6 +2,7 @@
 using ApiPeliculas.Modelos.Dtos;
 using ApiPeliculas.Repositorio.IRepositorio;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,6 +21,7 @@ namespace ApiPeliculas.Controllers
             _mapper = mapper;
         }
 
+        [AllowAnonymous]
         [HttpGet]
         public IActionResult GetPeliculas()
         {
@@ -36,6 +38,7 @@ namespace ApiPeliculas.Controllers
             return Ok(listaPeliculasDto);
         }
 
+        [AllowAnonymous]
         [HttpGet("{peliculaId:int}", Name = "Getpelicula")]
         public IActionResult GetPelicula(int peliculaId)
         {
@@ -51,6 +54,7 @@ namespace ApiPeliculas.Controllers
             return Ok(itemPeliculaIdDto);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public IActionResult CrearPelicula([FromBody] PeliculaDto peliculaDto)
         {
@@ -81,6 +85,7 @@ namespace ApiPeliculas.Controllers
 
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPatch("{peliculaId:int}", Name="ActualizarPeliculasPatch")]
         public IActionResult ActualizarPatchCategoria(int peliculaId, [FromBody] PeliculaDto peliculaDto)
         {
@@ -109,7 +114,7 @@ namespace ApiPeliculas.Controllers
             return CreatedAtRoute("GetPelicula", new { peliculaId = pelicula.Id }, pelicula);
 
         }
-
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{peliculaId:int}", Name ="BorrarPelicula")]
         public IActionResult BorrarPelicula(int peliculaId)
         {
@@ -133,6 +138,7 @@ namespace ApiPeliculas.Controllers
 
         }
 
+        [AllowAnonymous]
         [HttpGet("GetPeliculasEnCategoria{categoriaId:int}")]
         public IActionResult GetPeliculasEnCategoria(int categoriaId)
         {
@@ -158,6 +164,7 @@ namespace ApiPeliculas.Controllers
             return Ok(itemPeliculas);
         }
 
+        [AllowAnonymous]
         [HttpGet("GetPeliculasEnCategoriaPorNombre{nombre}")]
         public IActionResult GetPeliculasEnCategoriaPorNombre(string nombre)
         {

@@ -8,6 +8,6 @@
 
         public string NombreUsuario { get; set; }
         public string Password { get; set; }
-        public string Rol { get; set; }
+        public string Role { get; set; }
     }
 }

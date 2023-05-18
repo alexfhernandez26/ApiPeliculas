@@ -12,6 +12,6 @@ namespace ApiPeliculas.Modelos.Dtos
 
         [Required(ErrorMessage = "El password es Requerido")]
         public string Password { get; set; }
-        public string Rol { get; set; }
+        public string Role { get; set; }
     }
 }

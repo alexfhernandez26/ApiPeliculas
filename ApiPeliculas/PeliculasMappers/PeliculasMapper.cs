@@ -13,6 +13,9 @@ namespace ApiPeliculas.PeliculasMappers
 
             CreateMap<Pelicula, PeliculaDto>().ReverseMap();
             CreateMap<Usuario, UsuarioDto>().ReverseMap();
+            CreateMap<AppUsuario, UsuarioDto>().ReverseMap();
+            CreateMap<AppUsuario, UsuarioDatosDto>().ReverseMap();
+            CreateMap<AppUsuario, UsuarioRegistroDto>().ReverseMap();
         }
     }
 }

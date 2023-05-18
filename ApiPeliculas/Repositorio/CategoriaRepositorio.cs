@@ -60,7 +60,7 @@ namespace ApiPeliculas.Repositorio
         public bool Guardar()
         {
             var valor = _db.SaveChanges();
-            return _db.SaveChanges()  >= 1 ? true : false;
+            return _db.SaveChanges()  >= 0 ? true : false;
         }
     }
 }

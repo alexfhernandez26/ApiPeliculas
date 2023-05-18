@@ -2,6 +2,7 @@
 using ApiPeliculas.Modelos.Dtos;
 using ApiPeliculas.Repositorio.IRepositorio;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
@@ -22,7 +23,8 @@ namespace ApiPeliculas.Controllers
             this._respuestaApi = new();
 
         }
-
+        //[AllowAnonymous]
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public IActionResult GetUsuarios()
         {
@@ -38,8 +40,9 @@ namespace ApiPeliculas.Controllers
             return Ok(listaUsuarioDto);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("{usuarioId:int}", Name = "Getusuario")]
-        public IActionResult GetUsuario(int usuarioId)
+        public IActionResult GetUsuario(string usuarioId)
         {
             var itemUsuarioId = _usRepo.GetUsuario(usuarioId);
 
@@ -53,6 +56,7 @@ namespace ApiPeliculas.Controllers
             return Ok(itemUsuarioIdDto);
         }
 
+        [AllowAnonymous]
         [HttpPost("Registro")]
         public async Task<IActionResult> Registro([FromBody] UsuarioRegistroDto usuarioRegistroDto)
         {
@@ -82,6 +86,7 @@ namespace ApiPeliculas.Controllers
 
         }
 
+        [AllowAnonymous]
         [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody] UsuarioLoginDto usuarioLoginDto)
         {

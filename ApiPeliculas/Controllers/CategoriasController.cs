@@ -2,6 +2,7 @@
 using ApiPeliculas.Modelos.Dtos;
 using ApiPeliculas.Repositorio.IRepositorio;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,6 +10,7 @@ namespace ApiPeliculas.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+  
     public class CategoriasController : ControllerBase
     {
         private readonly ICategoriaRepositorio _ctRepo;
@@ -19,8 +21,9 @@ namespace ApiPeliculas.Controllers
                 _ctRepo = ctRepo;
                 _mapper = mapper;
         }
-
+        [AllowAnonymous]
         [HttpGet]
+        [ResponseCache(Duration =20)]
         public  IActionResult GetCategorias()
         {
             var listaCategoria = _ctRepo.GetCategorias();
@@ -35,6 +38,7 @@ namespace ApiPeliculas.Controllers
             return Ok(listaCategoriaDto);
         }
 
+        [AllowAnonymous]
         [HttpGet("{categoriaId:int}", Name = "GetCategoria")]
         public IActionResult GetCategoria(int categoriaId)
         {
@@ -50,7 +54,9 @@ namespace ApiPeliculas.Controllers
             return Ok(itemCategoriaId);
         }
 
+        [Authorize(Roles ="Admin")]
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public IActionResult CrearCategoria([FromBody] CrearCategoriaDto crearCategoriaDto)
         {
             if (!ModelState.IsValid)
@@ -78,7 +84,7 @@ namespace ApiPeliculas.Controllers
             return CreatedAtRoute("GetCategoria",new {categoriaId = categoria.Id},categoria);
           
         }
-
+        [Authorize(Roles = "Admin")]
         [HttpPatch("{categoriaId:int}")]
         public IActionResult ActualizarPatchCategoria(int categoriaId, [FromBody] CategoriaDto categoriaDto)
         {
@@ -107,6 +113,7 @@ namespace ApiPeliculas.Controllers
             return CreatedAtRoute("GetCategoria", new { categoriaId = categoria.Id }, categoria);
 
         }
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{categoriaId:int}")]
         public IActionResult BorrarCategoria(int categoriaId)
         {
