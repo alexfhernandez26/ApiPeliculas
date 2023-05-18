@@ -5,7 +5,7 @@ namespace ApiPeliculas.Modelos
     public class Usuario
     {
         [Key]
-        public int Id { get; set; }
+        public string Id { get; set; }
         
         public string Nombre { get; set; }
         

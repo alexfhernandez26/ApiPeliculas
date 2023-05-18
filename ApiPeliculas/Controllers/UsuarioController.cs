@@ -30,18 +30,18 @@ namespace ApiPeliculas.Controllers
         {
             var listaCategoria = _usRepo.GetUsuarios();
 
-            var listaUsuarioDto = new List<UsuarioDto>();
+            var listaUsuarioDto = new List<UsuarioIdentityDto>();
 
             foreach (var lista in listaCategoria)
             {
-                listaUsuarioDto.Add(_mapper.Map<UsuarioDto>(lista));
+                listaUsuarioDto.Add(_mapper.Map<UsuarioIdentityDto>(lista));
             }
 
             return Ok(listaUsuarioDto);
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpGet("{usuarioId:int}", Name = "Getusuario")]
+        [HttpGet("{usuarioId}", Name = "Getusuario")]
         public IActionResult GetUsuario(string usuarioId)
         {
             var itemUsuarioId = _usRepo.GetUsuario(usuarioId);
@@ -51,7 +51,7 @@ namespace ApiPeliculas.Controllers
                 return NotFound($"No existe categoria con el id {usuarioId}");
             }
 
-            var itemUsuarioIdDto = _mapper.Map<UsuarioDto>(itemUsuarioId);
+            var itemUsuarioIdDto = _mapper.Map<UsuarioIdentityDto>(itemUsuarioId);
 
             return Ok(itemUsuarioIdDto);
         }
@@ -70,7 +70,7 @@ namespace ApiPeliculas.Controllers
                 return BadRequest(_respuestaApi);
             }
 
-            var usuario = _usRepo.Registro(usuarioRegistroDto);
+            var usuario = await _usRepo.Registro(usuarioRegistroDto);
             if (usuario == null)
             {
                 _respuestaApi.StatusCode = HttpStatusCode.BadRequest;

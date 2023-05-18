@@ -74,17 +74,7 @@ namespace ApiPeliculas.Repositorio
                 NormalizedEmail = usuarioRegistroDto.NombreUsuario.ToUpper(),
                 Nombre = usuarioRegistroDto.Nombre
             };
-            try
-            {
-                var result2 = await _userManager.CreateAsync(usuario, usuarioRegistroDto.Password);
-                // Resto del código en caso de éxito
-            }
-            catch (Exception ex)
-            {
-                // Manejo de la excepción
-                Console.WriteLine($"Se produjo una excepción: {ex.Message}");
-                // Puedes agregar más lógica de manejo de excepciones aquí si es necesario
-            }
+          
 
             var result =await _userManager.CreateAsync(usuario, usuarioRegistroDto.Password);
 
